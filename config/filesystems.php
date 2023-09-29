@@ -56,11 +56,11 @@ return [
             'throw' => false,
         ],
 
-        'uploads' => [
-            'driver' => 'local',
-            'root' => storage_path('app/uploads'), // Define the root directory for your storage
-            'url' => env('APP_URL').'/uploads', // Define the URL for accessing the stored files
-        ],
+        // 'uploads' => [
+        //     'driver' => 'local',
+        //     'root' => storage_path('app/uploads'), // Define the root directory for your storage
+        //     'url' => env('APP_URL').'/uploads', // Define the URL for accessing the stored files
+        // ],
 
         'ffmpeg' => [
             'driver' => 'local',

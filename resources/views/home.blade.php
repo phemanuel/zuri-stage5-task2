@@ -7,7 +7,7 @@
     <title>Upload Video</title>
 </head>
 <body>
-    <form  action="{{ route('record.save') }}" method="POST" enctype="multipart/form-data">
+    <form  action="{{ route('recording.save') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <table>
 <tr>

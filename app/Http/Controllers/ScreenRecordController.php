@@ -62,72 +62,158 @@ class ScreenRecordController extends Controller
             $file = $request->file('file');
 
             // Set the video_title (file name without extension)
-            $videoUrl = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $videoTitle = str_replace(' ', '_', $validatedData['video_title']);
+
+            // Extract the original file extension
+            $fileExtension = $file->getClientOriginalExtension();
 
             // Generate a timestamp to make the video name unique
             $timestamp = time();
 
-            // Set the video_name (file name with extension)
-            $videoName = $timestamp . '_' . $file->getClientOriginalName();
+            // Set the video_name with the original extension
+            $videoNamePath = $timestamp . '_' . $videoTitle . '.' . $fileExtension;
 
-            // Get the storage path where the file will be saved
-            $storagePath = 'uploads'; // You can customize this path as needed
+            //--set a unique video name
+            $videoName = $timestamp . '_' . $videoTitle;            
 
-            // Set the full path to where the file is stored in your project
-            $fullFilePath = $storagePath . '/' . $videoName;
+            // Set the storage path to the public/uploads directory
+            $storagePath = 'public/uploads'; // This will save files in the public directory
 
-            //----Get video size-----
+            // Set the full path to where the file will be stored
+            $fullFilePath = $storagePath . '/' . $videoNamePath;
+
+            // Get the size of the uploaded video
             $video_size = $file->getSize();
 
-            //------Store the video-----
-            $file->storeAs($storagePath, $videoName);
+            // Store the video file in the specified storage path
+            $file->storeAs($storagePath, $videoNamePath);
 
-            // Create a clickable link for the video URL
-            $videoLink = '<a href="' . public_path($fullFilePath) . '" target="_blank">View Video</a>';
-            
             // Save the video recording to the database
             $screenRecording = ScreenRecord::create([
                 'video_title' => $validatedData['video_title'],
                 'video_description' => $validatedData['video_description'],
                 'video_name' => $videoName,
                 'video_size' => $video_size,
-                'video_url' => public_path($fullFilePath),//-- full file path without hyperlink
-                //'video_url' => $videoLink, //---file path with hyperlink
+                'video_url' => $fullFilePath, // Store the path relative to the public directory
             ]);
-            
+
             // Respond with a success message if upload successful
             return response()->json([
-                'message' => 'Screen recording saved successfully',                
+                'message' => 'Screen recording saved successfully',
                 'statusCode' => 201,
-                'data' => $screenRecording
+                'data' => $screenRecording,
             ]);
         } catch (\Exception $e) {
-            // Log the error message 
+            // Log the error message
             Log::error($e->getMessage());
             // Respond with an error message if upload not successful
             return response()->json([
                 'error' => 'An error occurred while saving the video recording.',
-                'statusCode' => 500
+                'statusCode' => 500,
             ]);
         }
     }
 
-
+    //---Get all screen recordings----
     public function showScreenRecord()
     {
-        $screenRecordings = ScreenRecord::all();
-
-    return response()->json($screenRecordings);
+        try {
+            // Retrieve all video records from the database
+            $screenRecordings = ScreenRecord::all();
+    
+            // Return the video records as a JSON response
+            return response()->json([
+                'data' => $screenRecordings,
+                'statusCode' => 200,
+            ]);
+        } catch (\Exception $e) {
+            // Log the error message for debugging purposes
+            Log::error($e->getMessage());
+    
+            return response()->json([
+                'error' => 'An error occurred while retrieving the video records.',
+                'statusCode' => 500,
+            ]);
+        }
     }
 
+    //------Get a screen recording by id------
     public function showScreenRecordId($id)
     {
-        $screenRecording = ScreenRecord::find($id);
+        try {
+            $screenRecording = ScreenRecord::find($id);
+    
+            // Check if the screen recording with the id is available
+            if (!$screenRecording) {
+                return response()->json([
+                    'message' => 'Screen recording not found',
+                    'statusCode' => 404,
+                ]);
+            }
+    
+            // If available, return the screen recording
+            return response()->json([
+                'data' => $screenRecording,
+                'statusCode' => 200,
+            ]);
+        } catch (\Exception $e) {
+            // Log the error message for debugging purposes
+            Log::error($e->getMessage());
+    
+            return response()->json([
+                'error' => 'An error occurred while retrieving the screen recording.',
+                'statusCode' => 500,
+            ]);
+        }
+    
+    }
 
-        if (!$screenRecording) {
-            return response()->json(['message' => 'Screen recording not found'], 404);
+    public function deleteScreenRecording($id)
+    {
+        try {
+            // Find the screen recording by ID
+            $screenRecording = ScreenRecord::find($id);
+
+            // Check if the screen recording exists
+            if (!$screenRecording) {
+                return response()->json([
+                    'message' => 'Screen recording not found',
+                    'statusCode' => 404,
+                ]);
+            }
+
+            // Get the full path to the file from the database
+            $filePath = $screenRecording->video_url;
+            // Log the file path for debugging
+            Log::info('File Path: ' . $filePath);
+
+            // Use the Storage facade to delete the file
+            if (Storage::disk('public')->delete($filePath)) {
+                // Delete the screen recording record from the database
+                $screenRecording->delete();
+
+                return response()->json([
+                    'message' => 'Screen recording deleted successfully',
+                    'statusCode' => 200,
+                ]);
+            } else {
+                return response()->json([
+                    'error' => 'Failed to delete the file from storage',
+                    'statusCode' => 500,
+                ]);
+            }
+        } catch (\Exception $e) {
+            // Log the error message for debugging purposes
+            Log::error($e->getMessage());
+
+            return response()->json([
+                'error' => 'An error occurred while deleting the screen recording.',
+                'statusCode' => 500,
+            ]);
         }
 
-        return response()->json($screenRecording);
     }
+
+
+
 }

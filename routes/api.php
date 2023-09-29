@@ -21,6 +21,12 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 
-Route::get('/screen-record', [ScreenRecordController::class, 'showScreenRecord'])->name('record.view');
-Route::get('/screen-record/{id}', [ScreenRecordController::class, 'showScreenRecordId'])->name('recordid.view');
-Route::post('/screen-record', [ScreenRecordController::class, 'screenRecordSave'])->name('record.save');
+Route::post('/screen-recording', [ScreenRecordController::class, 'screenRecordSave'])
+    ->name('recording.save')
+    ->middleware('web');
+Route::get('/view-recording', [ScreenRecordController::class, 'showScreenRecord'])
+->name('recording.view');
+Route::get('/screen-recording/{id}', [ScreenRecordController::class, 'showScreenRecordId'])
+->name('recordingid.view');
+Route::delete('/screen-recording/{id}', [ScreenRecordController::class, 'deleteScreenRecording'])
+->name('recording.delete');

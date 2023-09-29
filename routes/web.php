@@ -18,12 +18,18 @@ Route::get('/', function () {
     return view('home');
 });
 
-Route::post('/upload-chunk', [ScreenRecordController::class, 'chunkUpload'])->name('upload.chunk');
-Route::post('/complete-upload', [ScreenRecordController::class, 'completeUpload'])->name('complete.upload');
-Route::post('/screen-record', [ScreenRecordController::class, 'screenRecordSave'])
-    ->name('record.save')
+// Route::post('/upload-chunk', [ScreenRecordController::class, 'chunkUpload'])->name('upload.chunk');
+// Route::post('/complete-upload', [ScreenRecordController::class, 'completeUpload'])->name('complete.upload');
+Route::post('/screen-recording', [ScreenRecordController::class, 'screenRecordSave'])
+    ->name('recording.save')
     ->middleware('web');
+Route::get('/view-recording', [ScreenRecordController::class, 'showScreenRecord'])
+->name('recording.view');
+Route::get('/screen-recording/{id}', [ScreenRecordController::class, 'showScreenRecordId'])
+->name('recording.view');
+Route::delete('/screen-recording/{id}', [ScreenRecordController::class, 'deleteScreenRecording'])
+->name('recording.delete');
 //Route::redirect('/', 'api/');
 
-Route::post('/upload-chunk', [UploadController::class, 'handleChunkedUpload'])->name('upload.chunk');
-Route::post('/complete-upload', [UploadController::class, 'completeChunkedUpload'])->name('complete.upload');
+// Route::post('/upload-chunk', [UploadController::class, 'handleChunkedUpload'])->name('upload.chunk');
+// Route::post('/complete-upload', [UploadController::class, 'completeChunkedUpload'])->name('complete.upload');
