@@ -62,6 +62,11 @@ return [
             'url' => env('APP_URL').'/uploads', // Define the URL for accessing the stored files
         ],
 
+        'ffmpeg' => [
+            'driver' => 'local',
+            'root' => storage_path('app/ffmpeg'), // Path to the FFMpeg binary directory
+        ],
+
     ],
 
     /*

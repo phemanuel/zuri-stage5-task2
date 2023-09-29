@@ -17,4 +17,8 @@ class ScreenRecord extends Model
         'video_name',
         'video_size',
     ];
+
+    protected $hidden = [
+        'updated_at',
+    ];
 }

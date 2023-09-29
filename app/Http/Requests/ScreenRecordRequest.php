@@ -1,8 +1,9 @@
 <?php
 
 namespace App\Http\Requests;
-
+use App\Http\Controllers\ScreenRecordController;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
 
 class ScreenRecordRequest extends FormRequest
 {
@@ -22,10 +23,11 @@ class ScreenRecordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'required|string',
-            'description' => 'nullable|string',
-            'tags' => 'nullable|array',
-            'file' => 'required|file|mimetypes:video/*',
+            'video_title' => 'required|string',
+            'video_description' => 'nullable|string',
+            // 'video_url' => 'required|mimetypes:video/*|max:100000000',
         ];
     }
+
+  
 }

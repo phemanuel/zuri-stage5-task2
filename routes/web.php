@@ -1,5 +1,6 @@
 <?php
-
+use App\Http\Controllers\ScreenRecordController;
+use App\Http\Controllers\UploadController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,8 +14,16 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Route::get('/', function () {
-//     return view('welcome');
-// });
+Route::get('/', function () {
+    return view('home');
+});
 
-Route::redirect('/', 'api/');
+Route::post('/upload-chunk', [ScreenRecordController::class, 'chunkUpload'])->name('upload.chunk');
+Route::post('/complete-upload', [ScreenRecordController::class, 'completeUpload'])->name('complete.upload');
+Route::post('/screen-record', [ScreenRecordController::class, 'screenRecordSave'])
+    ->name('record.save')
+    ->middleware('web');
+//Route::redirect('/', 'api/');
+
+Route::post('/upload-chunk', [UploadController::class, 'handleChunkedUpload'])->name('upload.chunk');
+Route::post('/complete-upload', [UploadController::class, 'completeChunkedUpload'])->name('complete.upload');
