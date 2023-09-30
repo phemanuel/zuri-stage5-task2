@@ -55,7 +55,8 @@ class ScreenRecordController extends Controller
             $validatedData = $request->validate([
                 'video_title' => 'required|string|max:255',
                 'video_description' => 'nullable|string',
-                'file' => 'required|mimes:mp4,avi,mov,wmv|max:100000000',
+                'file' => 'required|mimes:mp4,avi,mov,wmv,mkv|max:20000',//--20MB
+                //'file' => 'required|mimes:mp4,avi,mov,wmv|max:100000000',
             ]);
 
             // Get the uploaded file
@@ -74,13 +75,16 @@ class ScreenRecordController extends Controller
             $videoNamePath = $timestamp . '_' . $videoTitle . '.' . $fileExtension;
 
             //--set a unique video name
-            $videoName = $timestamp . '_' . $videoTitle;            
+            $videoName = $timestamp . '_' . $videoTitle;  
+            
+            // Define the base URL
+            $baseUrl = config('app.url');
 
             // Set the storage path to the public/uploads directory
             $storagePath = 'public/uploads'; // This will save files in the public directory
 
             // Set the full path to where the file will be stored
-            $fullFilePath = $storagePath . '/' . $videoNamePath;
+            $fullFilePath =  $storagePath . '/' . $videoNamePath;
 
             // Get the size of the uploaded video
             $video_size = $file->getSize();
@@ -88,13 +92,15 @@ class ScreenRecordController extends Controller
             // Store the video file in the specified storage path
             $file->storeAs($storagePath, $videoNamePath);
 
+            $publicVideoUrl = asset('storage/uploads/' . $videoNamePath);            
+
             // Save the video recording to the database
             $screenRecording = ScreenRecord::create([
                 'video_title' => $validatedData['video_title'],
                 'video_description' => $validatedData['video_description'],
                 'video_name' => $videoName,
                 'video_size' => $video_size,
-                'video_url' => $fullFilePath, // Store the path relative to the public directory
+                'video_url' =>  $publicVideoUrl, // Store the path relative to the public directory
             ]);
 
             // Respond with a success message if upload successful
@@ -122,10 +128,11 @@ class ScreenRecordController extends Controller
             $screenRecordings = ScreenRecord::all();
     
             // Return the video records as a JSON response
-            return response()->json([
-                'data' => $screenRecordings,
-                'statusCode' => 200,
-            ]);
+            // return response()->json([
+            //     'data' => $screenRecordings,
+            //     'statusCode' => 200,
+            // ]);
+            return view('video-recording', compact('screenRecordings'));
         } catch (\Exception $e) {
             // Log the error message for debugging purposes
             Log::error($e->getMessage());
