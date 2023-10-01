@@ -7,7 +7,10 @@ use Illuminate\Http\Request;
 use App\Http\Requests\ScreenRecordRequest;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
+//use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
+use GuzzleHttp\Client;
+//use FFMpeg\FFMpeg;
+use getID3;
 
 class ScreenRecordController extends Controller
 {
@@ -49,14 +52,85 @@ class ScreenRecordController extends Controller
 
     }
 
+    public function transcribeVideo($id)
+    {
+        // Fetch the record from the database based on the provided ID
+        $screenRecording = ScreenRecord::find($id);
+
+        if (!$screenRecording) {
+            // Handle the case where the record with the provided ID is not found
+            return response()->json([
+                'error' => 'Screen recording not found.',
+                'statusCode' => 404,
+            ]);
+        }
+
+        // Now, you can access all the data associated with this record
+        $videoId = $screenRecording->id;
+        $videoTitle = $screenRecording->video_title;
+        $videoDescription = $screenRecording->video_description;
+        $videoUrl = $screenRecording->video_url;
+        $videoName = $screenRecording->video_name;
+        $videSize = $screenRecording->video_size;
+
+        // Extract audio from the video (you may need a package like FFmpeg)
+        $media = FFMpeg::fromDisk('local')
+                ->open('app/public/uploads' . $videoUrl)
+                ->export()
+                ->inFormat(new \FFMpeg\Format\Audio\MP3)
+                ->save('app/public/' . $videoName . '.mp3');
+        // Define the path to the video file
+        $videoPath = $videoUrl;        
+        $temporaryAudioPath = storage_path('app/public/'.$videoName . '.mp3');
+        // Use FFmpeg to extract audio from the video
+        $ffmpegCommand = "ffmpeg -i $videoPath -vn -ar 44100 -ac 2 -ab 192k -f wav $temporaryAudioPath";
+        shell_exec($ffmpegCommand);
+        // Save the audio as a temporary file
+        
+
+        // Call the Whisper ASR API to transcribe the audio
+        $whisperApiKey = config('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');
+        $client = new Client();
+        $response = $client->post('https://whisper-api-url/transcribe', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $whisperApiKey,
+            ],
+            'multipart' => [
+                [
+                    'name' => 'audio',
+                    'contents' => fopen($temporaryAudioPath, 'r'),
+                ],
+            ],
+        ]);
+
+        // Process the transcription response
+        $transcription = json_decode($response->getBody()->getContents());
+
+        // Clean up temporary files
+        unlink($temporaryAudioPath);
+        
+        $data = [
+            'video_id' => $videoId,
+            'video_url' => $videoUrl,
+            'video_name' => $videoName,
+            'video_description' => $videoDescription,
+            'video_size' => $videoSize,
+        ];
+
+        return response()->json([
+            'data' => $data,
+            'transcriptions' => $transcription,
+        ]);
+    }
+
+
     public function screenRecordSave(Request $request)
     {
         try {
             $validatedData = $request->validate([
                 'video_title' => 'required|string|max:255',
                 'video_description' => 'nullable|string',
-                'file' => 'required|mimes:mp4,avi,mov,wmv,mkv|max:20000',//--20MB
-                //'file' => 'required|mimes:mp4,avi,mov,wmv|max:100000000',
+                'file' => 'required|mimes:mp4,avi,mov,wmv,mkv|max:20000', //-- 20MB
             ]);
 
             // Get the uploaded file
@@ -74,17 +148,11 @@ class ScreenRecordController extends Controller
             // Set the video_name with the original extension
             $videoNamePath = $timestamp . '_' . $videoTitle . '.' . $fileExtension;
 
-            //--set a unique video name
-            $videoName = $timestamp . '_' . $videoTitle;  
-            
             // Define the base URL
             $baseUrl = config('app.url');
 
             // Set the storage path to the public/uploads directory
-            $storagePath = 'public/uploads'; // This will save files in the public directory
-
-            // Set the full path to where the file will be stored
-            $fullFilePath =  $storagePath . '/' . $videoNamePath;
+            $storagePath = 'public/uploads/';
 
             // Get the size of the uploaded video
             $video_size = $file->getSize();
@@ -92,15 +160,31 @@ class ScreenRecordController extends Controller
             // Store the video file in the specified storage path
             $file->storeAs($storagePath, $videoNamePath);
 
-            $publicVideoUrl = asset('storage/uploads/' . $videoNamePath);            
+            $path = Storage::path($storagePath . $videoNamePath);
+
+            $publicVideoUrl = asset('storage/uploads/' . $videoNamePath);
+            
+            // Initialize GetID3
+            $getID3 = new GetId3();
+
+            // Analyze the video file
+            $fileInfo = $getID3->analyze($path);            
+            
+            // Get the video duration (in seconds)
+            $duration = $fileInfo['playtime_seconds'];
+
+            // You can convert the duration to minutes if needed
+            $video_length = $fileInfo['playtime_string'];
 
             // Save the video recording to the database
             $screenRecording = ScreenRecord::create([
                 'video_title' => $validatedData['video_title'],
                 'video_description' => $validatedData['video_description'],
-                'video_name' => $videoName,
+                'video_name' => $videoNamePath, // Store the file name with extension
                 'video_size' => $video_size,
-                'video_url' =>  $publicVideoUrl, // Store the path relative to the public directory
+                'video_url' => $publicVideoUrl,
+                'video_length' => $video_length,
+                'video_path' => $path,
             ]);
 
             // Respond with a success message if upload successful
@@ -108,10 +192,12 @@ class ScreenRecordController extends Controller
                 'message' => 'Screen recording saved successfully',
                 'statusCode' => 201,
                 'data' => $screenRecording,
+                
             ]);
         } catch (\Exception $e) {
             // Log the error message
             Log::error($e->getMessage());
+
             // Respond with an error message if upload not successful
             return response()->json([
                 'error' => 'An error occurred while saving the video recording.',
@@ -119,6 +205,7 @@ class ScreenRecordController extends Controller
             ]);
         }
     }
+
 
     //---Get all screen recordings----
     public function showScreenRecord()

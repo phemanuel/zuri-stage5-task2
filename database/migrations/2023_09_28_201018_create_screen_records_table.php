@@ -18,7 +18,10 @@ return new class extends Migration
             $table->string('video_name');
             $table->string('video_size');
             $table->string('video_url');
+            $table->string('video_path');
             $table->string('video_thumbnail')->nullable();
+            $table->text('video_transcription')->nullable();
+            $table->string('video_length');
             $table->timestamps();
         });
     }

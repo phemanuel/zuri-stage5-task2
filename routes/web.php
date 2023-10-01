@@ -2,6 +2,7 @@
 use App\Http\Controllers\ScreenRecordController;
 use App\Http\Controllers\UploadController;
 use Illuminate\Support\Facades\Route;
+use GuzzleHttp\Client;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +30,14 @@ Route::get('/screen-recording/{id}', [ScreenRecordController::class, 'showScreen
 ->name('recording.view');
 Route::delete('/screen-recording/{id}', [ScreenRecordController::class, 'deleteScreenRecording'])
 ->name('recording.delete');
+Route::get('/test-guzzle', function () {
+    $client = new Client();
+    $response = $client->get('https://kingsconsult.com.ng/kbc');
+    $contents = $response->getBody()->getContents();
+    return $contents;
+});
+Route::get('/transcribe-video/{id}', [ScreenRecordController::class, 'transcribeVideo'])
+->name('recording.transcribe');
 //Route::redirect('/', 'api/');
 
 // Route::post('/upload-chunk', [UploadController::class, 'handleChunkedUpload'])->name('upload.chunk');
