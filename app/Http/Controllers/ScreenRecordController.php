@@ -8,9 +8,10 @@ use App\Http\Requests\ScreenRecordRequest;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 //use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
-use GuzzleHttp\Client;
+//use GuzzleHttp\Client;
 //use FFMpeg\FFMpeg;
 use getID3;
+use Illuminate\Support\Facades\Http;
 
 class ScreenRecordController extends Controller
 {
@@ -186,12 +187,27 @@ class ScreenRecordController extends Controller
                 'video_length' => $video_length,
                 'video_path' => $path,
             ]);
+            //-----transcribe----
+            $whisperApiKey = config('app.whisper_api_key');
+            $whisperApiUrl = 'https://transcribe.whisperapi.com'; // Replace with the actual API endpoint.
+            $video = fopen($publicVideoUrl, 'r');
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $whisperApiKey,
+            ])->attach('file',$video)->post($whisperApiUrl,[
+                'url' => $publicVideoUrl,
+                'fileType' => 'mp4',
+                'diarization' => 'false',
+                'task' => 'transcribe'
+            ]);                
+
+            dd($response->json());
 
             // Respond with a success message if upload successful
             return response()->json([
                 'message' => 'Screen recording saved successfully',
                 'statusCode' => 201,
                 'data' => $screenRecording,
+                //'transcription' => $transcription,
                 
             ]);
         } catch (\Exception $e) {

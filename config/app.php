@@ -59,6 +59,8 @@ return [
 
     'asset_url' => env('ASSET_URL'),
 
+    'whisper_api_kep' => env('WHISPER_API_KEY'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
@@ -184,7 +186,7 @@ return [
 
     'aliases' => Facade::defaultAliases()->merge([
         // 'Example' => App\Facades\Example::class,
-        'Image' => Intervention\Image\Facades\Image::class,
+        'Image' => Intervention\Image\Facades\Image::class,        
     ])->toArray(),
 
 ];
