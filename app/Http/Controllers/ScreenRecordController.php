@@ -143,33 +143,32 @@ class ScreenRecordController extends Controller
             // Extract the original file extension
             $fileExtension = $file->getClientOriginalExtension();
 
-            // Generate a timestamp to make the video name unique
-            $timestamp = time();
-
             // Set the video_name with the original extension
-            $videoNamePath = $timestamp . '_' . $videoTitle . '.' . $fileExtension;
+            $videoNamePath = time() . '_' . $videoTitle . '.' . $fileExtension;
 
             // Define the base URL
             $baseUrl = config('app.url');
 
             // Set the storage path to the public/uploads directory
-            $storagePath = 'public/uploads/';
+            $storagePath = 'storage/uploads/';
 
             // Get the size of the uploaded video
             $video_size = $file->getSize();
 
             // Store the video file in the specified storage path
-            $file->storeAs($storagePath, $videoNamePath);
+            $file->storeAs('uploads', $videoNamePath, 'public');
 
-            $path = Storage::path($storagePath . $videoNamePath);
-
-            $publicVideoUrl = asset('storage/uploads/' . $videoNamePath);
+            $path_new = public_path($storagePath . $videoNamePath);
+           // dd($path_new);
+    
+           // $path = asset('storage/app/public/uploads/' . $videoNamePath);
+            $publicVideoUrl = asset('storage/uploads/'. $videoNamePath);
             
             // Initialize GetID3
             $getID3 = new GetId3();
 
             // Analyze the video file
-            $fileInfo = $getID3->analyze($path);            
+            $fileInfo = $getID3->analyze($path_new);            
             
             // Get the video duration (in seconds)
             $duration = $fileInfo['playtime_seconds'];
@@ -185,22 +184,22 @@ class ScreenRecordController extends Controller
                 'video_size' => $video_size,
                 'video_url' => $publicVideoUrl,
                 'video_length' => $video_length,
-                'video_path' => $path,
+                'video_path' => $path_new,
             ]);
             //-----transcribe----
-            $whisperApiKey = config('app.whisper_api_key');
-            $whisperApiUrl = 'https://transcribe.whisperapi.com'; // Replace with the actual API endpoint.
-            $video = fopen($publicVideoUrl, 'r');
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $whisperApiKey,
-            ])->attach('file',$video)->post($whisperApiUrl,[
-                'url' => $publicVideoUrl,
-                'fileType' => 'mp4',
-                'diarization' => 'false',
-                'task' => 'transcribe'
-            ]);                
+            // $whisperApiKey = config('app.whisper_api_key');
+            // $whisperApiUrl = 'https://transcribe.whisperapi.com'; // Replace with the actual API endpoint.
+            // $video = fopen($publicVideoUrl, 'r');
+            // $response = Http::withHeaders([
+            //     'Authorization' => 'Bearer ' . $whisperApiKey,
+            // ])->attach('file',$video)->post($whisperApiUrl,[
+            //     'url' => $publicVideoUrl,
+            //     'fileType' => 'mp4',
+            //     'diarization' => 'false',
+            //     'task' => 'transcribe'
+            // ]);                
 
-            dd($response->json());
+            // dd($response->json());
 
             // Respond with a success message if upload successful
             return response()->json([

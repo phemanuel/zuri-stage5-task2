@@ -23,5 +23,6 @@ class ScreenRecord extends Model
 
     protected $hidden = [
         'updated_at',
+        'video_path',
     ];
 }
